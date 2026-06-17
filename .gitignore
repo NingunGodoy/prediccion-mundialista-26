@@ -1,0 +1,8 @@
+# Nunca subir las claves secretas a GitHub
+.streamlit/secrets.toml
+
+# Basura de Python
+__pycache__/
+*.pyc
+.venv/
+venv/
