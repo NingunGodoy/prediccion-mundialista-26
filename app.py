@@ -74,10 +74,10 @@ def login_screen():
 # ----------------------------------------------------------------------
 def matches_screen():
     user = st.session_state.user
-    matches = db.get_matches()
+    matches = db.get_matches(only_active=True)
 
     if not matches:
-        st.info("Todavía no hay partidos cargados. El admin debe cargarlos en la pestaña **Admin**.")
+        st.info("Todavía no hay partidos en la quiniela. El admin debe seleccionarlos en la pestaña **Admin**.")
         return
 
     # Agrupar por día (hora de México)
@@ -272,9 +272,61 @@ def admin_screen():
 
     st.divider()
 
+    # ---- Seleccionar qué partidos entran a la quiniela ----
+    st.markdown("#### 3) Elegir partidos de la quiniela")
+    st.caption("Marca la casilla de los partidos que tus amigos podrán predecir. "
+               "Los que dejes sin marcar no aparecen ni cuentan puntos.")
+    all_matches = db.get_matches()
+    if not all_matches:
+        st.caption("Primero carga partidos arriba.")
+    else:
+        rows = []
+        for m in all_matches:
+            ko = db.to_mx(db.parse_iso(m["kickoff"]))
+            rows.append({
+                "id": m["id"],
+                "Fecha": ko.strftime("%d/%m %H:%M"),
+                "Partido": f"{m['team1']} vs {m['team2']}",
+                "Grupo": m.get("grupo") or "",
+                "En quiniela": bool(m.get("activo")),
+            })
+        df = pd.DataFrame(rows)
+
+        c1, c2 = st.columns(2)
+        if c1.button("✅ Marcar todos", use_container_width=True):
+            for m in all_matches:
+                db.set_active(m["id"], True)
+            st.rerun()
+        if c2.button("⬜ Quitar todos", use_container_width=True):
+            for m in all_matches:
+                db.set_active(m["id"], False)
+            st.rerun()
+
+        edited = st.data_editor(
+            df,
+            hide_index=True,
+            use_container_width=True,
+            disabled=["id", "Fecha", "Partido", "Grupo"],
+            column_config={"En quiniela": st.column_config.CheckboxColumn("En quiniela")},
+            key="pool_editor",
+        )
+        if st.button("💾 Guardar selección", type="primary"):
+            current = {m["id"]: bool(m.get("activo")) for m in all_matches}
+            cambios = 0
+            for _, r in edited.iterrows():
+                new_val = bool(r["En quiniela"])
+                if current.get(int(r["id"])) != new_val:
+                    db.set_active(int(r["id"]), new_val)
+                    cambios += 1
+            st.success(f"Selección guardada ({cambios} cambios).")
+            st.rerun()
+
+    st.divider()
+
     # ---- Capturar resultados ----
-    st.markdown("#### 3) Capturar resultados finales")
-    matches = db.get_matches()
+    st.markdown("#### 4) Capturar resultados finales")
+    st.caption("Solo de los partidos que están en la quiniela.")
+    matches = db.get_matches(only_active=True)
     started = [m for m in matches if db.match_status(m) in ("locked", "finished")]
     if not started:
         st.caption("Aún no hay partidos que hayan empezado.")

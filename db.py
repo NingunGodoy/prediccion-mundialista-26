@@ -121,9 +121,18 @@ def add_matches(rows: list[dict]) -> int:
     return added
 
 
-def get_matches() -> list[dict]:
-    res = _client().table("matches").select("*").order("kickoff").execute()
+def get_matches(only_active: bool = False) -> list[dict]:
+    """Lista los partidos. only_active=True => solo los que están en la quiniela."""
+    q = _client().table("matches").select("*")
+    if only_active:
+        q = q.eq("activo", True)
+    res = q.order("kickoff").execute()
     return res.data or []
+
+
+def set_active(match_id: int, value: bool):
+    """Marca/desmarca si un partido entra a la quiniela."""
+    _client().table("matches").update({"activo": value}).eq("id", match_id).execute()
 
 
 def set_result(match_id: int, home: int, away: int):
@@ -214,7 +223,7 @@ def points_for(pred_h: int, pred_a: int, act_h, act_a) -> int | None:
 
 def scoreboard() -> list[dict]:
     """Tabla de posiciones: puntos, aciertos exactos y aciertos de ganador por usuario."""
-    matches = {m["id"]: m for m in get_matches()}
+    matches = {m["id"]: m for m in get_matches(only_active=True)}
     preds = get_all_predictions()
     table: dict[str, dict] = {}
 
