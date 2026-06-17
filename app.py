@@ -14,7 +14,7 @@ import streamlit as st
 
 import db
 
-st.set_page_config(page_title="Predicción Mundialista 26", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Quiniela FORTNITOSHN 26", page_icon="⚽", layout="centered")
 
 # Banderitas opcionales para que se vea bonito (si falta una, no pasa nada).
 FLAGS = {
@@ -37,8 +37,8 @@ if "user" not in st.session_state:
 
 
 def login_screen():
-    st.title("⚽ Predicción Mundialista 26")
-    st.caption("Predice los marcadores y compite con tus amigos.")
+    st.title("⚽ Quiniela FORTNITOSHN 26")
+    st.caption("La quiniela mundialista de los panas de Fortnite. ¡Predice y demuestra quién sabe!")
 
     tab_login, tab_signup = st.tabs(["Iniciar sesión", "Crear usuario"])
 
